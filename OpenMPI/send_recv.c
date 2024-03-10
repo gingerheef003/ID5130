@@ -3,26 +3,39 @@
 #include <mpi.h>
 
 int main(int argc, char** argv) {
-	int rank, n_ranks, my_pair;
+	int rank, n_ranks;
+	int n_numbers = 524288;
+	int send_message[n_numbers];
+	int recv_message[n_numbers];
+	MPI_Status status;
 
 	MPI_Init(&argc, &argv);
 
 	MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	if(rank != 0) {
-		char message[30];
-		sprintf(message, "Hello world, I'm rank %d\n", rank);
-		MPI_Send(message, 30, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
-	} else {
-		for(int sender = 1; sender < n_ranks; sender++) {
-			char message[16];
-			MPI_Status status;
-
-			MPI_Recv(message, 30, MPI_CHAR, sender, 0, MPI_COMM_WORLD, &status);
-			printf("%s", message);
-		}
+	for(int i = 0; i < n_numbers; i++) {
+		send_message[i] = i;
 	}
-	
+
+	if(rank == 0) {
+		MPI_Send(send_message, n_numbers, MPI_INT, 1, 0, MPI_COMM_WORLD);
+	}
+
+	if(rank == 1) {
+		MPI_Recv(recv_message, n_numbers, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+		printf("Message received by rank %d\n", rank);
+	}
+
+	if(rank == 1) {
+		MPI_Send(send_message, n_numbers, MPI_INT, 0, 0, MPI_COMM_WORLD);
+	}
+
+	if(rank == 0) {
+		MPI_Recv(recv_message, n_numbers, MPI_INT, 1, 0, MPI_COMM_WORLD, &status);
+		printf("Message received by rank %d\n", rank);
+	}
+
+
 	return MPI_Finalize();
 }
