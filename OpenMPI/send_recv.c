@@ -1,41 +1,36 @@
-#include <math.h>
 #include <stdio.h>
 #include <mpi.h>
 
 int main(int argc, char** argv) {
-	int rank, n_ranks;
-	int n_numbers = 524288;
-	int send_message[n_numbers];
-	int recv_message[n_numbers];
+	int rank, neighbour;
+	int max_count = 1000000;
+	int counter = 0;
+	int bored;
+	int ball = 1;
 	MPI_Status status;
 
 	MPI_Init(&argc, &argv);
 
-	MPI_Comm_size(MPI_COMM_WORLD, &n_ranks);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-	for(int i = 0; i < n_numbers; i++) {
-		send_message[i] = i;
-	}
-
+	neighbour = 1 - rank;
+	
 	if(rank == 0) {
-		MPI_Send(send_message, n_numbers, MPI_INT, 1, 0, MPI_COMM_WORLD);
+		MPI_Send(&ball, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
 	}
 
-	if(rank == 1) {
-		MPI_Recv(recv_message, n_numbers, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
-		printf("Message received by rank %d\n", rank);
+	counter = 0;
+	bored = 0;
+	while(!bored) {
+		MPI_Recv(&ball, 1, MPI_INT, neighbour, 0, MPI_COMM_WORLD, &status);
+
+		counter += 1;
+		MPI_Send(&ball, 1, MPI_INT, neighbour, 0, MPI_COMM_WORLD);
+
+		bored = counter >= max_count;
 	}
 
-	if(rank == 1) {
-		MPI_Send(send_message, n_numbers, MPI_INT, 0, 0, MPI_COMM_WORLD);
-	}
-
-	if(rank == 0) {
-		MPI_Recv(recv_message, n_numbers, MPI_INT, 1, 0, MPI_COMM_WORLD, &status);
-		printf("Message received by rank %d\n", rank);
-	}
-
+	printf("Rank %d is bored and giving up\n", rank);
 
 	return MPI_Finalize();
 }
